@@ -3,6 +3,7 @@ using PruebaExamen2.DAL;
 using PruebaExamen2.Models;
 using System.Linq.Expressions;
 
+
 namespace PruebaExamen2.BLL
 {
     public class EmpacadosBLL
@@ -49,6 +50,7 @@ namespace PruebaExamen2.BLL
             }
             return paso;
         }
+
         public bool Modificar(Empacados empacado)
         {
             var paso = false;

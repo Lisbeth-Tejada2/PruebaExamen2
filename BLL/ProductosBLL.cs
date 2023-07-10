@@ -8,6 +8,7 @@ namespace PruebaExamen2.BLL
     public class ProductosBLL
     {
         private Contexto _contexto;
+
         public ProductosBLL(Contexto _contexto)
         {
             this._contexto = _contexto;
