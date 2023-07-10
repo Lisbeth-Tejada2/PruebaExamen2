@@ -1,0 +1,44 @@
+﻿@page "/producto"
+
+@inject ProductosBLL productobll
+
+<PageTitle>Registro</PageTitle>
+
+<EditForm Model="Lista">
+    <DataAnnotationsValidator />
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Costo</th>
+                <th>Precio</th>
+                <th>Existencia</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var Item in Lista)
+            {
+                <tr>
+                    <td>@Item.Descripcion</td>
+                    <td>@Item.Costo</td>
+                    <td>@Item.Precio</td>
+                    <td>@Item.Existencia</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</EditForm>
+
+@code {
+    public List<Productos> Lista { get; set; } = new List<Productos>();
+
+    protected override void OnInitialized()
+    {
+        Buscar();
+    }
+    public void Buscar()
+    {
+        Lista = productobll.GetList(p => true);
+    }
+}

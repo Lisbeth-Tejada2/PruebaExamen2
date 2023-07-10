@@ -1,0 +1,255 @@
+﻿@page "/productos"
+@page "/productos/{empacadoId:int}"
+
+@inject ProductosBLL productobll
+@inject EmpacadosBLL empacadobll
+@inject NotificationService notificationService
+
+<EditForm Model="producto" OnValidSubmit="Guardar" >
+    <DataAnnotationsValidator/>
+    <div class="card">
+        <div class="card-header">
+            <h1>Entrada de Productos Empacados</h1>
+        </div>
+        <div class="card-body">
+             @* No. de Producto y boton de buscar *@
+                <div class="col">
+                    <div class="form-group input-group">
+                        <div class="col-4">
+                            <label class="form-label">No. Producto</label>
+                            <InputNumber id="numero" @bind-Value="empacado.EmpacadoId" class="form-control"></InputNumber>
+                        </div>
+                        <div class="input-group-append btnBuscar">
+                            <button id="buscar" type="button" class="btn btn-info oi oi-magnifying-glass" @onclick = "Buscar"></button>
+                        </div>
+                    </div>
+                </div>
+            
+             @* Fecha *@
+            <div class="form-group">
+                <label class="form-label">Fecha</label>
+                <InputDate  id="Fecha" @bind-Value="empacado.Fecha" class="form-control"/>
+            </div>
+             @* Concepto *@
+            <div>
+                <label class="form-label">Concepto</label>
+                <InputText @bind-Value="empacado.Concepto" class="form-control"></InputText>
+            </div>
+        </div>
+             @* Detalle de Empacados (Utilizados) *@
+            <div class="card">
+                <div class="card-header">
+                    <h3>Utilizados</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-group d-flex align-items-end">
+                        <div class="col-6 flex-fill mx-1">
+                             @* Prodcutos *@
+                            <label class="form-label">Productos</label>
+                            <InputSelect @bind-Value=detalle.ProductoId class='form-select'>
+                            <option value="0" selected="selected" hidden="hidden" disabled="disabled">- Selecciona un producto -</option>
+                                @foreach (Productos producto in Lista)
+                                {
+                                    <option value="@producto.ProductoId">@producto.Descripcion (@producto.Existencia restantes)</option>  
+                                }
+                            </InputSelect>
+                        </div>
+                         @* Cantidad a agg de cada producto *@
+                        <div class="col-3 flex-fill mx-2">
+                            <label class="from-label">Cantidad</label>
+                            <InputNumber @bind-Value="detalle.Cantidad" class="form-control"></InputNumber>
+                        </div>
+                         @* Boton de agg Detalle *@
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-success oi oi-plus" @onclick="AggDetalle"></button>
+                        </div>
+                    </div>
+                    
+                    <table class="table">
+                        <thead>
+                            <th>Producto</th>
+                            <th>Descripcion</th>
+                            <th>Cantidad</th>
+                            <th></th>
+                        </thead>
+                        <tbody>
+                            @foreach(var Item in empacado.EmpacadosDetalle)
+                            {
+                                var producto = productobll.Buscar(Item.ProductoId);
+                                @if(producto != null){
+                                    <tr>
+                                    <td>@Item.ProductoId</td>
+                                    <td>@producto.Descripcion</td>
+                                    <td>@Item.Cantidad</td>
+                                     @* Boton de Eliminar *@
+                                    <td><button class="btn btn-danger oi oi-x" @onclick="@(() => EliminarDetalle(Item))"></button></td>
+                                </tr>
+                                }
+                                
+                            }
+                        </tbody>
+                    </table>
+                     @* Cantidad total y su sumatoria *@
+                    <label class="form-label">Cantidad Total : @empacado.EmpacadosDetalle.Sum(c => c.Cantidad)</label> 
+
+                     @* Producidos *@
+                    <div class="form-control">
+                        <h1>Producidos</h1>
+                        <div class="input-group d-flex align-items-end">
+                            <div class="col-6 flex mx-1">
+                                <label class="form-label">Productos</label>
+                                <InputSelect @bind-Value=empacado.ProductoId class='form-select'>
+                                <option value="0" selected="selected" hidden="hidden" disabled="disable">Seleciona el producto a producir</option>
+                                @foreach (Productos producto in Lista)
+                                {
+                                    <option value="@producto.ProductoId">@producto.Descripcion</option>
+                                }
+                                </InputSelect>
+                            </div>
+                                @* Cantidad de Producidos *@
+                            <div class="col-4 flex mx-1">
+                                <label class="from-label">Cantidad</label>
+                                <InputNumber @bind-Value="empacado.Cantidad" class="form-control" ></InputNumber>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+            </div>
+         @* Botones *@
+        <div class="card-footer">
+            <button type="button" class="btn btn-primary" @onclick = "Nuevo">Nuevo</button>
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <button type="button" class="btn btn-danger" @onclick="Eliminar">Eliminar</button>
+            
+        </div>
+    </div>
+</EditForm>
+
+
+@code{
+    [Parameter]
+    public int empacadoId { get; set; }
+    public Productos producto { get; set; } = new Productos();
+    public Empacados empacado { get; set; } = new Empacados();
+    public List<Productos> Lista { get; set; } = new List<Productos>();
+    public EmpacadosDetalle detalle { get; set; } = new EmpacadosDetalle();
+
+    void Nuevo(){
+        empacado = new Empacados();
+        detalle = new EmpacadosDetalle();
+    }
+    void Buscar(){
+        var empacadoInicial = empacadobll.Buscar(empacado.EmpacadoId);
+        if(empacadoInicial != null){
+            empacado = empacadoInicial;
+        }
+    }
+    void Guardar(){
+        if(!Validar())
+            return;
+        if(empacadobll.Guardar(empacado)){
+            ShowNotification(
+                new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Guardado Correctamente"
+                });
+            this.Nuevo();
+        }
+        else{
+            ShowNotification(
+                new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = " No Guardado Correctamente"
+                });
+        }
+    }
+
+    void Eliminar(){
+        if(empacadobll.Eliminar(empacado))
+        {
+            ShowNotification(
+                new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Eliminado Correctamente"
+                });
+            this.Nuevo();
+        }
+    }
+    protected override void OnInitialized()
+    {
+        Lista = productobll.GetList(p => true);
+        if(empacadoId !=0){
+            this.empacado.EmpacadoId = empacadoId;
+            Buscar();
+        }
+    }
+
+    void AggDetalle(){
+        if(detalle.Cantidad <= 0){
+            ShowNotification(
+                new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "la cantidad deseada debe ser mayor a cero"
+                });
+                return;
+        }
+        var producto = productobll.Buscar(detalle.ProductoId);
+        if(producto != null && producto.Existencia < detalle.Cantidad){
+            ShowNotification(
+                new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "la cantidad deseada supera la cantidad disponible"
+                });
+                return;
+        }
+        empacado.EmpacadosDetalle.Add(detalle);
+        detalle = new EmpacadosDetalle();   
+    }
+
+    void EliminarDetalle(EmpacadosDetalle detalle)
+    {
+        var detalleEncontado = empacado.EmpacadosDetalle.Find(d => d.DetalleId == detalle.DetalleId);
+        if(detalleEncontado != null)
+        {
+            detalle = detalleEncontado;
+            empacado.EmpacadosDetalle.Remove(detalle); 
+        }
+    }
+
+    bool Validar(){
+        string? mensajeError = string.Empty;
+        if(string.IsNullOrEmpty(empacado.Concepto)){
+            mensajeError += "El concepto estestá vacío\n";
+        }
+        if(empacado.EmpacadosDetalle.Count < 1){
+            mensajeError += "Dene utilizar al menos 1 producto\n";
+        }
+        if(empacado.ProductoId == 0){
+            mensajeError += "Debe seleccionar el producto a producir\n";
+        }
+        if(empacado.Cantidad <= 0){
+            mensajeError+= "Debe colocar una cantidad producida valida";
+        }
+       if(mensajeError.Equals(string.Empty))
+            return true;
+            
+        ShowNotification(
+                new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = mensajeError
+                });
+                return false;
+    }
+
+    void ShowNotification(NotificationMessage message)
+    {
+        notificationService.Notify(message);
+    }
+}

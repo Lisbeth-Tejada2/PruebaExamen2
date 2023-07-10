@@ -1,0 +1,70 @@
+﻿@page "/consulta"
+
+@inject EmpacadosBLL empacadobll
+@inject NavigationManager Navigation
+<PageTitle>Registro</PageTitle>
+
+<EditForm Model="Lista">
+    <DataAnnotationsValidator />
+    <div class="card">
+        <div class="card-header">
+            <h1> Registro Consulta</h1>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class='col-md-6'>
+                    <label class="form-label">Criterio</label>
+                    <input id="criterio" type="text" class="form-control" @bind="Criterios">
+                </div>
+                <div class='col-md-6'>
+                    <label class="form-label">Filtro</label>
+                    <select id="filtrar" class="form-control" @bind="Filtrar">
+                        <option value="1">LibroId</option>
+                        <option value="2">Titulo</option>
+                        <option value="3">Precio</option>
+                        <option value="4">Fecha</option>
+                    </select>
+                </div>
+                <div>
+                    <button id="boton" type="button" class="btn btn-primary" @onclick="Buscar">
+                        <i>Buscar</i>
+                    </button>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>No. de Empacado</th>
+                        <th>Fecha</th>
+                        <th>Concepto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var Item in Lista)
+                    {
+                        <tr @ondblclick="@(() => Navigation.NavigateTo("/productos/"+@Item.EmpacadoId))">
+                            <td>@Item.EmpacadoId</td>
+                            <td>@Item.Fecha.ToShortDateString()</td>
+                            <td>@Item.Concepto</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    public string Filtrar { get; set; } = string.Empty;
+    public string Criterios { get; set; } = string.Empty;
+    public List<Empacados> Lista { get; set; } = new List<Empacados>();
+    protected override void OnInitialized()
+    {
+        Buscar();
+    }
+    public void Buscar()
+    {
+        Lista = empacadobll.GetList(p => true);
+    }
+}
